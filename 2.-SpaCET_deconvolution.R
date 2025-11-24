@@ -3,7 +3,7 @@ library(tidyverse)
 library(SpaCET)
 
 ##load the "all_samples" normalized object and then split by sample
-path_all_samples <- "S:/VISIUM BMS/MARTA_BMS/allsamplesBMS_giotto"
+path_all_samples <- "C:/"
 all_samples <- loadGiotto(path_all_samples,
                           load_params = list(),
                           reconnect_giottoImage = TRUE,
@@ -11,13 +11,6 @@ all_samples <- loadGiotto(path_all_samples,
                           init_gobject = TRUE,
                           verbose = TRUE
 )
-
-#check the samples available
-#add Marta's metadata
-read.csv("S:/VISIUM BMS/MARTA_BMS/metadata_filtered.csv", header = TRUE) -> metadata_MMA_BMS
-addCellMetadata(gobject = all_samples, new_metadata = metadata_MMA_BMS, by_column = TRUE, column_cell_ID = "cell_ID") -> all_samples
-pDataDT(all_samples) -> metadata
-print(unique(metadata$list_ID))
 
 
 #split giotto objects per sample
@@ -38,37 +31,31 @@ for (id in samples) {
 
 rm(sub)
 
-
 ######## SPACET
 #1. GENERATE SpaCET OBJECT
 # it does not matter which visium object you load as you will only use the SpaCET object architecture (substituting its data with your own), regardless of the sample
 #you use it a an skeleton
 
-visiumPath <- "S:/VISIUM/visium_results/outs_p40/"
+visiumPath <- "C://outs_p40/"
 SpaCET_obj <- create.SpaCET.object.10X(visiumPath = visiumPath)
 
 #2. LOAD YOUR DATA TO THE SpaCET OBJECT
-
 # each sample will be done individually; change "subXX" as needed
 
-sub30@expression[["cell"]][["rna"]][["normalized"]]@exprMat -> SpaCET_obj@input[["counts"]]
-sub30@expression[["cell"]][["rna"]][["normalized"]]@exprMat@Dimnames -> SpaCET_obj@input[["counts"]]@Dimnames
-sub30@expression[["cell"]][["rna"]][["normalized"]]@exprMat@x -> SpaCET_obj@input[["counts"]]@x
+sub40@expression[["cell"]][["rna"]][["normalized"]]@exprMat -> SpaCET_obj@input[["counts"]]
+sub40@expression[["cell"]][["rna"]][["normalized"]]@exprMat@Dimnames -> SpaCET_obj@input[["counts"]]@Dimnames
+sub40@expression[["cell"]][["rna"]][["normalized"]]@exprMat@x -> SpaCET_obj@input[["counts"]]@x
 
 #3.- SpaCET DECONVOLUTION: WATCH OUT FOR TUMOUR HISTOLOGY
 #check the sample in order to execute the matching deconvolution
 
 ### Squamous · LUSC 
-# patients: 2 · 14 · 23 · 24 · 37 · 12 · 35 · 45 · 21 · 33
-#for this analysis: 12 · 21 · 23 · 37 · 45
-
+# samples: 
 ### Adeno · LUAD
-# patients: 20 · 11 · 13 · 15 · 20 · 22 · 17 · 27 · 32 · 30 · 28 · 43 · 49
-#for this analysis: 27 · 30
-
+# samples: 
 
 # deconvolve ST data
-#execute one block, LUAD or LUSC
+#execute one block, LUAD or LUSC as corresponds
 
 spacet_LUAD <- SpaCET.deconvolution(SpaCET_obj = SpaCET_obj, cancerType="LUAD", coreNo=8)
 spacet_LUAD@results$deconvolution$propMat -> LUAD_deconv
@@ -79,10 +66,9 @@ spacet_LUSC@results$deconvolution$propMat -> LUSC_deconv
 t(LUSC_deconv) -> LUSC_deconv_proc
 
 # change the saved file name so they do not overwrite
-write.csv(LUAD_deconv_proc, "S:/VISIUM BMS/MARTA_BMS/deconvolution_raw/p30_LUAD_deconv.csv", col.names = TRUE, row.names = TRUE)
-write.csv(LUSC_deconv_proc, "S:/VISIUM BMS/MARTA_BMS/deconvolution_raw/p45_LUSC_deconv.csv", col.names = TRUE, row.names = TRUE)
+write.csv(LUAD_deconv_proc, "C://p40_LUAD_deconv.csv", col.names = TRUE, row.names = TRUE)
+write.csv(LUSC_deconv_proc, "C://p45_LUSC_deconv.csv", col.names = TRUE, row.names = TRUE)
 
-table(metadata_MMA_BMS$list_ID)
 
 ################################
 #PROCESSING
@@ -90,14 +76,15 @@ table(metadata_MMA_BMS$list_ID)
 
 library(tidyverse)
 
-path <- "S:/VISIUM BMS/MARTA_BMS/deconvolution_raw/" #wherever you have the spacet csv results
+path <- "C:/" #wherever you have the spacet csv results
 file_list <- list.files(path, pattern = "*.csv", full.names = TRUE)
 final_df <- file_list %>%
   lapply(read.csv) %>%
   bind_rows()
 
 colnames(final_df)[1] <- "cell_ID"
-write.csv(final_df, "S:/VISIUM BMS/MARTA_BMS/deconvolution_raw/merged_deconvolution.csv" , col.names = TRUE, row.names = FALSE)
+write.csv(final_df, "C://merged_deconvolution.csv" , col.names = TRUE, row.names = FALSE)
+
 
 
 
