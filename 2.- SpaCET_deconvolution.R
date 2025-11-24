@@ -85,6 +85,28 @@ final_df <- file_list %>%
 colnames(final_df)[1] <- "cell_ID"
 write.csv(final_df, "C://merged_deconvolution.csv" , col.names = TRUE, row.names = FALSE)
 
+#######################################
+##  ecology on deconvolution results ##
+#######################################
+
+library(vegan)
+
+read.csv("C:/.csv", header = TRUE) -> deconvolution
+deconvolution <- deconvolution[,c(-1)]
+rownames(deconvolution) <- deconvolution[,1]
+shannon_diversity <- diversity(deconvolution, index = "shannon")
+richness <- specnumber(deconvolution)
+evenness <- shannon_diversity / log(richness)
+
+diversity_df <- data.frame(cell_ID = names(shannon_diversity),
+                           shannon_diversity = shannon_diversity,
+                           richness = richness,
+                           evenness = evenness)
+
+
+
+write.csv(diversity_df, "C://.csv")
+
 
 
 
